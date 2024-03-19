@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alert-simulation-pod
+spec:
+  containers:
+  - name: crash-container
+    image: busybox
+    command: ["sh", "-c", "exit 1"]

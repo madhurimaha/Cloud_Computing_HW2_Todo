@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: default
+data:
+  alertmanager.yaml: |
+    global:
+      resolve_timeout: 5m
+      config: /etc/alertmanager/config/alertmanager.yaml
+
+    inhibit_rules:
+      - equal: ['namespace', 'alertname']
+        source_matchers: ['severity = critical']
+        target_matchers: ['severity =~ warning|info']
+      - equal: ['namespace', 'alertname']
+        source_matchers: ['severity = warning']
+        target_matchers: ['severity = info']
+      - equal: ['namespace']
+        source_matchers: ['alertname = InfoInhibitor']
+        target_matchers: ['severity = info']
+
+    receivers:
+      - name: 'slack-notifications'
+        slack_configs:
+          - api_url: 'https://hooks.slack.com/services/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'
+            channel: '#hw2'
+            send_resolved: true
+            text: >
+              {{ range .Alerts }}
+                *Alert:* {{ .Annotations.summary }} - `{{ .Labels.severity }}`
+                *Description:* {{ .Annotations.description }}
+                *Details:*
+                {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+                {{ end }}
+              {{ end }}
+      - name: 'null'
+
+    route:
+      receiver: 'null'
+      group_by: ['namespace']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      routes:
+        - match:
+            alertname: PodCrashLooping
+          receiver: 'slack-notifications'
+
+    templates:
+      - '/etc/alertmanager/config/*.tmpl'

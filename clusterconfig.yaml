@@ -1,0 +1,23 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: madhuri_cluster
+  region: us-east-1
+
+nodeGroups:
+  - name: node-group
+    instanceType: t3.medium
+    desiredCapacity: 3
+    minSize: 1
+    maxSize: 4
+    privateNetworking: true
+    securityGroups:
+      - sg-0ceb788c96c626574
+    subnets:
+      - subnet-042f186288c3e7501
+      - subnet-0cd2df5215e056885
+      - subnet-0eb86b3bcecd20677
+      - subnet-051f7befd52d30a58
+      - subnet-0ad7cb1b5811a4ee9
+      - subnet-06e215c33e24fb5ca
