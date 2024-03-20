@@ -13,6 +13,6 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: madhurim2001/flaskapp:latest #685928798852.dkr.ecr.us-east-1.amazonaws.com/mytodo:v2
+        image: madhurim2001/flaskapp:latest 
         ports:
         - containerPort: 5000
