@@ -6,7 +6,7 @@ data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
-
+    
     scrape_configs:
       - job_name: 'minikube-pods'
         kubernetes_sd_configs:
@@ -27,3 +27,48 @@ data:
             regex: ([^:]+)(?::\d+)?;(\d+)
             replacement: $1:$2
             target_label: __address__
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - 'alertmanager:9093'
+    rule_files:
+      - "alert_rules.yml"
+  alert_rules.yml: |
+    groups:
+    - name: example
+      rules:
+      - alert: PodCrashLooping
+        annotations:
+          description: Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping.
+          summary: Pod is crash looping
+        expr: kube_pod_container_status_restarts_total{job="kube-state-metrics"} > 1
+        for: 1m
+        labels:
+          severity: critical
+    - name: general.rules
+      rules:
+      - alert: TargetDown
+        annotations:
+          description: '{{ printf "%.4g" $value }}% of the {{ $labels.job }}/{{ $labels.service }} targets in {{ $labels.namespace }} namespace are down.'
+          runbook_url: https://runbooks.prometheus-operator.dev/runbooks/general/targetdown
+          summary: One or more targets are unreachable.
+        expr: 100 * (count(up == 0) BY (cluster, job, namespace, service) / count(up) BY (cluster, job, namespace, service)) > 10
+        for: 10m
+        labels:
+          severity: warning
+      - alert: Watchdog
+        annotations:
+          description: This alert ensures the alerting pipeline is functional. It should always be firing.
+          summary: Alertmanager functionality verification.
+        expr: vector(1)
+        labels:
+          severity: none
+      - alert: InfoInhibitor
+        annotations:
+          description: Used to inhibit info alerts. Fires when there's a severity="info" alert and stops when a 'warning' or 'critical' alert starts in the same namespace.
+          runbook_url: https://runbooks.prometheus-operator.dev/runbooks/general/infoinhibitor
+          summary: Info-level alert inhibition
+        expr: ALERTS{severity="info"} > 0 unless ALERTS{alertname!="InfoInhibitor",severity=~"warning|critical",alertstate="firing"} > 0
+        labels:
+          severity: none
